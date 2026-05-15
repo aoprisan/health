@@ -1,4 +1,4 @@
-import type { Entry } from '../types'
+import { DRINKS, type Entry } from '../types'
 
 type Props = {
   entries: Entry[]
@@ -19,23 +19,32 @@ export function TodayList({ entries, onUndo }: Props) {
   }
   return (
     <ul className="entry-list">
-      {entries.map((e) => (
-        <li key={e.id} className="entry-row">
-          <span className="entry-time">{formatTime(e.ts)}</span>
-          <span className="entry-amount">
-            {e.amountMl}
-            <span className="unit">ml</span>
-          </span>
-          <button
-            type="button"
-            className="entry-undo"
-            onClick={() => onUndo(e.id)}
-            aria-label={`Undo ${e.amountMl} millilitres at ${formatTime(e.ts)}`}
-          >
-            undo
-          </button>
-        </li>
-      ))}
+      {entries.map((e) => {
+        const meta = DRINKS[e.kind]
+        return (
+          <li key={e.id} className="entry-row" data-kind={e.kind}>
+            <span className="entry-time">{formatTime(e.ts)}</span>
+            <span className="entry-main">
+              <span className="entry-kind" style={{ color: `var(${meta.accentVar})` }}>
+                {meta.label}
+              </span>
+              <span className="entry-amount">
+                {e.amountMl}
+                <span className="unit">ml</span>
+              </span>
+              <span className="entry-factor">×{meta.factor.toFixed(1)}</span>
+            </span>
+            <button
+              type="button"
+              className="entry-undo"
+              onClick={() => onUndo(e.id)}
+              aria-label={`Undo ${e.amountMl} millilitres of ${meta.label} at ${formatTime(e.ts)}`}
+            >
+              undo
+            </button>
+          </li>
+        )
+      })}
     </ul>
   )
 }

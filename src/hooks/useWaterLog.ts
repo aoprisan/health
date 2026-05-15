@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { loadState, saveState } from '../storage'
-import type { DayLog, Entry, State } from '../types'
+import { hydrationOf, type DayLog, type DrinkKind, type Entry, type State } from '../types'
 
 function localDateKey(ts: number): string {
   const d = new Date(ts)
@@ -21,11 +21,14 @@ export function useWaterLog() {
     saveState(state)
   }, [state])
 
-  const addEntry = useCallback((amountMl: number) => {
+  const addEntry = useCallback((amountMl: number, kind: DrinkKind = 'water') => {
     if (!Number.isFinite(amountMl) || amountMl <= 0) return
     setState((s) => ({
       ...s,
-      entries: [...s.entries, { id: makeId(), ts: Date.now(), amountMl: Math.round(amountMl) }],
+      entries: [
+        ...s.entries,
+        { id: makeId(), ts: Date.now(), amountMl: Math.round(amountMl), kind },
+      ],
     }))
   }, [])
 
@@ -53,6 +56,11 @@ export function useWaterLog() {
     [todayEntries],
   )
 
+  const todayHydrationMl = useMemo(
+    () => Math.round(todayEntries.reduce((sum, e) => sum + hydrationOf(e), 0)),
+    [todayEntries],
+  )
+
   const historyByDay = useMemo<DayLog[]>(() => {
     const groups = new Map<string, Entry[]>()
     for (const e of state.entries) {
@@ -67,6 +75,7 @@ export function useWaterLog() {
         date,
         entries: entries.sort((a, b) => b.ts - a.ts),
         totalMl: entries.reduce((s, e) => s + e.amountMl, 0),
+        hydrationMl: Math.round(entries.reduce((s, e) => s + hydrationOf(e), 0)),
       }))
       .sort((a, b) => (a.date < b.date ? 1 : -1))
   }, [state.entries, today])
@@ -74,6 +83,7 @@ export function useWaterLog() {
   return {
     goalMl: state.settings.dailyGoalMl,
     todayTotal,
+    todayHydrationMl,
     todayEntries,
     historyByDay,
     addEntry,

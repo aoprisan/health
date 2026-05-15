@@ -2,6 +2,7 @@ import { useWaterLog } from './hooks/useWaterLog'
 import { GlassProgress } from './components/GlassProgress'
 import { GoalEditor } from './components/GoalEditor'
 import { HistoryList } from './components/HistoryList'
+import { HydrationMeter } from './components/HydrationMeter'
 import { QuickPickGrid } from './components/QuickPickGrid'
 import { TodayList } from './components/TodayList'
 
@@ -20,6 +21,7 @@ export default function App() {
   const {
     goalMl,
     todayTotal,
+    todayHydrationMl,
     todayEntries,
     historyByDay,
     addEntry,
@@ -27,8 +29,9 @@ export default function App() {
     setGoal,
   } = useWaterLog()
 
-  const pct = goalMl > 0 ? Math.round((todayTotal / goalMl) * 100) : 0
-  const reached = todayTotal >= goalMl && goalMl > 0
+  const volumePct = goalMl > 0 ? Math.round((todayTotal / goalMl) * 100) : 0
+  const hydrationPct = goalMl > 0 ? Math.round((todayHydrationMl / goalMl) * 100) : 0
+  const hydrationReached = todayHydrationMl >= goalMl && goalMl > 0
 
   return (
     <div className="app">
@@ -37,26 +40,54 @@ export default function App() {
           <h1 className="masthead-title">
             Hydrology<span className="amp">.</span>
           </h1>
-          <p className="masthead-sub">a water journal · vol. i</p>
+          <p className="masthead-sub">a hydration journal · vol. ii</p>
         </div>
         <div className="masthead-date">{formatToday()}</div>
       </header>
 
       <section className="hero">
-        <GlassProgress currentMl={todayTotal} goalMl={goalMl} />
+        <div className="hero-meters">
+          <figure className="meter-figure">
+            <GlassProgress currentMl={todayTotal} goalMl={goalMl} />
+            <figcaption className="meter-caption">
+              <span className="meter-caption-label">volume</span>
+              <span className="meter-caption-value">
+                {todayTotal.toLocaleString()}
+                <span className="unit">ml</span>
+              </span>
+            </figcaption>
+          </figure>
+          <figure className="meter-figure">
+            <HydrationMeter hydrationMl={todayHydrationMl} goalMl={goalMl} />
+            <figcaption className="meter-caption">
+              <span className="meter-caption-label">effective</span>
+              <span className="meter-caption-value">
+                {todayHydrationMl.toLocaleString()}
+                <span className="unit">ml</span>
+              </span>
+            </figcaption>
+          </figure>
+        </div>
+
         <div className="hero-readout">
-          <div className="hero-label">today's intake</div>
-          <div className={`hero-num ${reached ? 'is-reached' : ''}`}>
-            {pct}
+          <div className="hero-label">today's hydration</div>
+          <div className={`hero-num ${hydrationReached ? 'is-reached' : ''}`}>
+            {hydrationPct}
             <span className="pct-mark">%</span>
           </div>
           <div className="hero-stat">
             <span className="current">
-              {todayTotal.toLocaleString()}<span className="unit">ml</span>
+              {todayHydrationMl.toLocaleString()}<span className="unit">ml</span>
             </span>
             <span className="sep">/</span>
             <span>of {goalMl.toLocaleString()} ml goal</span>
-            {reached ? <span className="reached-tag">— kept.</span> : null}
+            {hydrationReached ? <span className="reached-tag">— kept.</span> : null}
+          </div>
+          <div className="hero-substat">
+            <span className="hero-substat-label">raw volume</span>
+            <span className="hero-substat-value">
+              {todayTotal.toLocaleString()} ml · {volumePct}%
+            </span>
           </div>
           <GoalEditor goalMl={goalMl} onSave={setGoal} />
         </div>
@@ -64,7 +95,7 @@ export default function App() {
 
       <section className="section">
         <h2 className="section-title">
-          <span className="glyph">~</span> pour a glass <span className="glyph">~</span>
+          <span className="glyph">~</span> pour a drink <span className="glyph">~</span>
         </h2>
         <QuickPickGrid onPick={addEntry} />
       </section>
@@ -80,7 +111,7 @@ export default function App() {
       </section>
 
       <footer className="app-footer">
-        <span>folio · 01</span>
+        <span>folio · 02</span>
         <span className="ornament">— bibite aquam —</span>
         <span>local · private</span>
       </footer>
