@@ -1,4 +1,4 @@
-import type { DayLog } from '../types'
+import { DRINKS, type DayLog } from '../types'
 
 type Props = {
   days: DayLog[]
@@ -30,7 +30,7 @@ export function HistoryList({ days, goalMl }: Props) {
   return (
     <div className="history">
       {days.map((day) => {
-        const reached = day.totalMl >= goalMl
+        const reached = day.hydrationMl >= goalMl
         const { weekday, month, day: dayNum } = formatDateParts(day.date)
         return (
           <details key={day.date} className="history-day">
@@ -41,21 +41,35 @@ export function HistoryList({ days, goalMl }: Props) {
                 </span>
               </span>
               <span className={`history-total ${reached ? 'reached' : ''}`}>
-                <span className="num">{day.totalMl.toLocaleString()}</span> ml
-                {reached ? <span className="check"> · goal kept</span> : null}
+                <span className="history-total-line">
+                  <span className="num">{day.hydrationMl.toLocaleString()}</span> ml hydration
+                  {reached ? <span className="check"> · goal kept</span> : null}
+                </span>
+                <span className="history-total-sub">
+                  {day.totalMl.toLocaleString()} ml volume
+                </span>
               </span>
             </summary>
             <ul className="entry-list">
-              {day.entries.map((e) => (
-                <li key={e.id} className="entry-row">
-                  <span className="entry-time">{formatTime(e.ts)}</span>
-                  <span className="entry-amount">
-                    {e.amountMl}
-                    <span className="unit">ml</span>
-                  </span>
-                  <span aria-hidden="true" />
-                </li>
-              ))}
+              {day.entries.map((e) => {
+                const meta = DRINKS[e.kind]
+                return (
+                  <li key={e.id} className="entry-row" data-kind={e.kind}>
+                    <span className="entry-time">{formatTime(e.ts)}</span>
+                    <span className="entry-main">
+                      <span className="entry-kind" style={{ color: `var(${meta.accentVar})` }}>
+                        {meta.label}
+                      </span>
+                      <span className="entry-amount">
+                        {e.amountMl}
+                        <span className="unit">ml</span>
+                      </span>
+                      <span className="entry-factor">×{meta.factor.toFixed(1)}</span>
+                    </span>
+                    <span aria-hidden="true" />
+                  </li>
+                )
+              })}
             </ul>
           </details>
         )
