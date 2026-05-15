@@ -30,9 +30,11 @@ export function QuickPickGrid({ onPick }: Props) {
               className={`drink-tab ${active ? 'is-active' : ''}`}
               data-kind={k}
               onClick={() => setKind(k)}
+              title={m.note}
             >
               <span className="drink-tab-label">{m.label}</span>
               <span className="drink-tab-factor">×{m.factor.toFixed(1)}</span>
+              {m.note ? <span className="drink-tab-note">{m.note}</span> : null}
             </button>
           )
         })}
