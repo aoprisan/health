@@ -41,7 +41,6 @@ export function GoalEditor({ goalMl, onSave }: Props) {
         id="goal-input"
         type="number"
         min={1}
-        step={50}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         inputMode="numeric"
