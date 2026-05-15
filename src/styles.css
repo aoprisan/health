@@ -1,0 +1,383 @@
+:root {
+  --bg: #f1f5f9;
+  --surface: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --primary: #0ea5e9;
+  --primary-dark: #0284c7;
+  --primary-soft: #e0f2fe;
+  --success: #16a34a;
+  --border: #e2e8f0;
+  --radius: 14px;
+  --shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1220;
+    --surface: #111a2e;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --primary: #38bdf8;
+    --primary-dark: #0ea5e9;
+    --primary-soft: #0c2841;
+    --success: #22c55e;
+    --border: #1e293b;
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
+    Cantarell, 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+button {
+  font-family: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+input {
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px 16px calc(32px + env(safe-area-inset-bottom));
+}
+
+.app-header {
+  padding: 16px 4px 8px;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.6rem;
+  letter-spacing: -0.01em;
+}
+
+.tagline {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.app-main {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.card-title {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Progress */
+.progress {
+  display: grid;
+  gap: 10px;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.progress-amount strong {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.progress-pct {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.progress-pct.reached {
+  color: var(--success);
+}
+
+.progress-track {
+  width: 100%;
+  height: 14px;
+  background: var(--primary-soft);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+  border-radius: 999px;
+  transition: width 280ms ease;
+}
+
+/* Goal editor */
+.goal-edit-btn {
+  margin-top: 12px;
+  background: transparent;
+  border: 1px dashed var(--border);
+  color: var(--muted);
+  border-radius: 10px;
+  padding: 8px 12px;
+  width: 100%;
+}
+
+.goal-edit-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.goal-editor {
+  margin-top: 12px;
+}
+
+.goal-label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.goal-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.goal-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.goal-row button {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.goal-row button.primary {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+/* Quick pick grid */
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+@media (min-width: 600px) {
+  .quick-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+.quick-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  padding: 10px 8px 12px;
+  background: var(--primary-soft);
+  border: 1px solid transparent;
+  color: var(--primary-dark);
+  border-radius: 14px;
+  transition: transform 80ms ease, background 120ms ease, box-shadow 120ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.quick-btn:hover {
+  background: color-mix(in srgb, var(--primary-soft) 70%, var(--primary) 30%);
+}
+
+.quick-btn:active {
+  transform: scale(0.96);
+}
+
+.quick-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.quick-btn-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.quick-btn-amount {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+  margin-top: auto;
+}
+
+.quick-btn-unit {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+@media (prefers-color-scheme: dark) {
+  .quick-btn-amount {
+    color: #e0f2fe;
+  }
+}
+
+/* Entry lists */
+.entry-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.entry-list.compact {
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.entry-row {
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.entry-list.compact .entry-row {
+  grid-template-columns: 80px 1fr;
+  border-bottom: none;
+  padding: 4px 4px;
+}
+
+.entry-row:last-child {
+  border-bottom: none;
+}
+
+.entry-time {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+}
+
+.entry-amount {
+  font-weight: 600;
+}
+
+.entry-undo {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 0.85rem;
+}
+
+.entry-undo:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.empty {
+  color: var(--muted);
+  text-align: center;
+  margin: 12px 0 4px;
+}
+
+/* History */
+.history {
+  display: grid;
+  gap: 8px;
+}
+
+.history-day {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
+  background: var(--surface);
+}
+
+.history-day summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  list-style: none;
+  padding: 4px 0;
+}
+
+.history-day summary::-webkit-details-marker {
+  display: none;
+}
+
+.history-date {
+  font-weight: 600;
+}
+
+.history-total {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.history-total.reached {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.app-footer {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 0.85rem;
+}
