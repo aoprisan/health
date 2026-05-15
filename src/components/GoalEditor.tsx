@@ -13,20 +13,20 @@ export function GoalEditor({ goalMl, onSave }: Props) {
     return (
       <button
         type="button"
-        className="goal-edit-btn"
+        className="goal-trigger"
         onClick={() => {
           setDraft(String(goalMl))
           setEditing(true)
         }}
       >
-        Edit goal ({goalMl} ml)
+        revise daily goal
       </button>
     )
   }
 
   return (
     <form
-      className="goal-editor"
+      className="goal-form"
       onSubmit={(e) => {
         e.preventDefault()
         const n = Number(draft)
@@ -36,23 +36,23 @@ export function GoalEditor({ goalMl, onSave }: Props) {
         }
       }}
     >
-      <label className="goal-label" htmlFor="goal-input">
-        Daily goal (ml)
-      </label>
-      <div className="goal-row">
-        <input
-          id="goal-input"
-          type="number"
-          min={1}
-          step={50}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          inputMode="numeric"
-          autoFocus
-        />
-        <button type="submit" className="primary">Save</button>
-        <button type="button" onClick={() => setEditing(false)}>Cancel</button>
-      </div>
+      <label htmlFor="goal-input">new goal</label>
+      <input
+        id="goal-input"
+        type="number"
+        min={1}
+        step={50}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        inputMode="numeric"
+        autoFocus
+        aria-label="Daily goal in millilitres"
+      />
+      <span>ml</span>
+      <span className="actions">
+        <button type="submit" className="save">save</button>
+        <button type="button" className="cancel" onClick={() => setEditing(false)}>cancel</button>
+      </span>
     </form>
   )
 }

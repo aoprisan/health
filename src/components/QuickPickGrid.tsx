@@ -1,31 +1,33 @@
 import { QUICK_SIZES_ML } from '../types'
+import { GlasswareIcon } from './Glassware'
 
 type Props = {
   onPick: (amountMl: number) => void
 }
 
-const MIN_ML = QUICK_SIZES_ML[0]
-const MAX_ML = QUICK_SIZES_ML[QUICK_SIZES_ML.length - 1]
+function formatAmount(ml: number): { value: string; unit: string } {
+  if (ml >= 1000) return { value: (ml / 1000).toString(), unit: 'l' }
+  return { value: ml.toString(), unit: 'ml' }
+}
 
 export function QuickPickGrid({ onPick }: Props) {
   return (
-    <div className="quick-grid" role="group" aria-label="Quick water amounts">
+    <div className="quick-row" role="group" aria-label="Quick water amounts">
       {QUICK_SIZES_ML.map((ml) => {
-        // Visual hint: bigger amount → taller button (within sensible range).
-        const t = (ml - MIN_ML) / (MAX_ML - MIN_ML)
-        const height = 72 + Math.round(t * 64)
+        const { value, unit } = formatAmount(ml)
         return (
           <button
             key={ml}
             type="button"
-            className="quick-btn"
-            style={{ minHeight: `${height}px` }}
+            className="quick-glass"
             onClick={() => onPick(ml)}
             aria-label={`Log ${ml} millilitres`}
           >
-            <span className="quick-btn-icon" aria-hidden="true">💧</span>
-            <span className="quick-btn-amount">{ml}</span>
-            <span className="quick-btn-unit">ml</span>
+            <GlasswareIcon ml={ml} />
+            <span className="quick-glass-amount">
+              {value}
+              <span className="ml">{unit}</span>
+            </span>
           </button>
         )
       })}
