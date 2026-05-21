@@ -3,6 +3,7 @@ import { GlassProgress } from './components/GlassProgress'
 import { GoalEditor } from './components/GoalEditor'
 import { HistoryList } from './components/HistoryList'
 import { HydrationMeter } from './components/HydrationMeter'
+import { InstallButton } from './components/InstallButton'
 import { QuickPickGrid } from './components/QuickPickGrid'
 import { TodayList } from './components/TodayList'
 
@@ -42,7 +43,10 @@ export default function App() {
           </h1>
           <p className="masthead-sub">a hydration journal · vol. ii</p>
         </div>
-        <div className="masthead-date">{formatToday()}</div>
+        <div className="masthead-aside">
+          <div className="masthead-date">{formatToday()}</div>
+          <InstallButton />
+        </div>
       </header>
 
       <section className="hero">
