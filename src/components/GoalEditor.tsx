@@ -1,13 +1,22 @@
 import { useState } from 'react'
 
 type Props = {
-  goalMl: number
-  onSave: (goalMl: number) => void
+  goal: number
+  onSave: (goal: number) => void
+  unit?: string
+  triggerLabel?: string
+  fieldLabel?: string
 }
 
-export function GoalEditor({ goalMl, onSave }: Props) {
+export function GoalEditor({
+  goal,
+  onSave,
+  unit = 'ml',
+  triggerLabel = 'revise daily goal',
+  fieldLabel = 'new goal',
+}: Props) {
   const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(String(goalMl))
+  const [draft, setDraft] = useState(String(goal))
 
   if (!editing) {
     return (
@@ -15,11 +24,11 @@ export function GoalEditor({ goalMl, onSave }: Props) {
         type="button"
         className="goal-trigger"
         onClick={() => {
-          setDraft(String(goalMl))
+          setDraft(String(goal))
           setEditing(true)
         }}
       >
-        revise daily goal
+        {triggerLabel}
       </button>
     )
   }
@@ -36,7 +45,7 @@ export function GoalEditor({ goalMl, onSave }: Props) {
         }
       }}
     >
-      <label htmlFor="goal-input">new goal</label>
+      <label htmlFor="goal-input">{fieldLabel}</label>
       <input
         id="goal-input"
         type="number"
@@ -45,9 +54,9 @@ export function GoalEditor({ goalMl, onSave }: Props) {
         onChange={(e) => setDraft(e.target.value)}
         inputMode="numeric"
         autoFocus
-        aria-label="Daily goal in millilitres"
+        aria-label={`Daily goal in ${unit}`}
       />
-      <span>ml</span>
+      <span>{unit}</span>
       <span className="actions">
         <button type="submit" className="save">save</button>
         <button type="button" className="cancel" onClick={() => setEditing(false)}>cancel</button>
