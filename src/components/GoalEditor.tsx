@@ -1,22 +1,13 @@
 import { useState } from 'react'
 
 type Props = {
-  goal: number
-  onSave: (goal: number) => void
-  unit?: string
-  triggerLabel?: string
-  fieldLabel?: string
+  goalMl: number
+  onSave: (goalMl: number) => void
 }
 
-export function GoalEditor({
-  goal,
-  onSave,
-  unit = 'ml',
-  triggerLabel = 'revise daily goal',
-  fieldLabel = 'new goal',
-}: Props) {
+export function GoalEditor({ goalMl, onSave }: Props) {
   const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(String(goal))
+  const [draft, setDraft] = useState(String(goalMl))
 
   if (!editing) {
     return (
@@ -24,11 +15,11 @@ export function GoalEditor({
         type="button"
         className="goal-trigger"
         onClick={() => {
-          setDraft(String(goal))
+          setDraft(String(goalMl))
           setEditing(true)
         }}
       >
-        {triggerLabel}
+        revise daily goal
       </button>
     )
   }
@@ -45,7 +36,7 @@ export function GoalEditor({
         }
       }}
     >
-      <label htmlFor="goal-input">{fieldLabel}</label>
+      <label htmlFor="goal-input">new goal</label>
       <input
         id="goal-input"
         type="number"
@@ -54,9 +45,9 @@ export function GoalEditor({
         onChange={(e) => setDraft(e.target.value)}
         inputMode="numeric"
         autoFocus
-        aria-label={`Daily goal in ${unit}`}
+        aria-label="Daily goal in millilitres"
       />
-      <span>{unit}</span>
+      <span>ml</span>
       <span className="actions">
         <button type="submit" className="save">save</button>
         <button type="button" className="cancel" onClick={() => setEditing(false)}>cancel</button>
