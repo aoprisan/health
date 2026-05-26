@@ -2,6 +2,7 @@ export type DrinkKind =
   | 'water'
   | 'tea'
   | 'coffee'
+  | 'beerNA'
   | 'beerLight'
   | 'beer'
   | 'beerStrong'
@@ -17,6 +18,7 @@ export const DRINKS: Record<DrinkKind, DrinkMeta> = {
   water: { label: 'water', factor: 1.0, accentVar: '--water' },
   tea: { label: 'tea', factor: 0.9, accentVar: '--tea' },
   coffee: { label: 'coffee', factor: 0.7, accentVar: '--coffee' },
+  beerNA: { label: 'na beer', factor: 0.95, accentVar: '--beer-na', note: '≤0.5% abv' },
   beerLight: { label: 'light beer', factor: 0.6, accentVar: '--beer-light', note: '≤5% abv' },
   beer: { label: 'beer', factor: 0.5, accentVar: '--beer', note: '5–7% abv' },
   beerStrong: { label: 'strong beer', factor: 0.3, accentVar: '--beer-strong', note: '>7% abv' },
@@ -26,6 +28,7 @@ export const DRINK_ORDER: DrinkKind[] = [
   'water',
   'tea',
   'coffee',
+  'beerNA',
   'beerLight',
   'beer',
   'beerStrong',

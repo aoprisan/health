@@ -14,6 +14,7 @@
 
   --tea: #6b8e5a;
   --coffee: #6b4423;
+  --beer-na: #c9b87a;
   --beer-light: #d9a84a;
   --beer: #c78a1f;
   --beer-strong: #8a5a0f;
@@ -384,6 +385,7 @@ input { font-family: inherit; }
 .drink-tab[data-kind='water']      { --tab-accent: var(--water); }
 .drink-tab[data-kind='tea']        { --tab-accent: var(--tea); }
 .drink-tab[data-kind='coffee']     { --tab-accent: var(--coffee); }
+.drink-tab[data-kind='beerNA']     { --tab-accent: var(--beer-na); }
 .drink-tab[data-kind='beerLight']  { --tab-accent: var(--beer-light); }
 .drink-tab[data-kind='beer']       { --tab-accent: var(--beer); }
 .drink-tab[data-kind='beerStrong'] { --tab-accent: var(--beer-strong); }
@@ -464,6 +466,7 @@ input { font-family: inherit; }
 .quick-row[data-kind='water']      .glass-icon .fill-wash { fill: color-mix(in srgb, var(--water) 22%, var(--paper)); }
 .quick-row[data-kind='tea']        .glass-icon .fill-wash { fill: color-mix(in srgb, var(--tea) 30%, var(--paper)); }
 .quick-row[data-kind='coffee']     .glass-icon .fill-wash { fill: color-mix(in srgb, var(--coffee) 35%, var(--paper)); }
+.quick-row[data-kind='beerNA']     .glass-icon .fill-wash { fill: color-mix(in srgb, var(--beer-na) 32%, var(--paper)); }
 .quick-row[data-kind='beerLight']  .glass-icon .fill-wash { fill: color-mix(in srgb, var(--beer-light) 35%, var(--paper)); }
 .quick-row[data-kind='beer']       .glass-icon .fill-wash { fill: color-mix(in srgb, var(--beer) 35%, var(--paper)); }
 .quick-row[data-kind='beerStrong'] .glass-icon .fill-wash { fill: color-mix(in srgb, var(--beer-strong) 38%, var(--paper)); }
