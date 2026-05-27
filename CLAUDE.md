@@ -35,7 +35,7 @@ State flows through a single source of truth: the **`useWaterLog()`** hook (`src
 Hydration is **not** the same as volume. Every drink has a `factor` in `DRINKS` (`src/types.ts`); effective hydration is `amountMl * factor`, computed by `hydrationOf(entry)`. The goal meter tracks summed *effective hydration*, while the daily total shows raw volume.
 
 ```
-water 1.0 · tea 0.9 · coffee 0.7 · light beer 0.6 (≤5%) · beer 0.5 (5–7%) · strong beer 0.3 (>7%)
+water 1.0 · tea 0.9 · coffee 0.7 · na beer 0.95 (≤0.5%) · light beer 0.6 (≤5%) · beer 0.5 (5–7%) · strong beer 0.3 (>7%)
 ```
 
 When adding a drink type, update `DrinkKind`, the `DRINKS` record (label, factor, `accentVar`), and `DRINK_ORDER` in `src/types.ts`, and add the matching CSS accent variable in `styles.css`. Preset volumes live in `QUICK_SIZES_ML`.
