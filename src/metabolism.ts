@@ -7,8 +7,16 @@ export const HOUR_MS = 3_600_000
    with a linear ramp for absorption up to peak plasma level. */
 export const CAFFEINE_HALF_LIFE_H = 5
 export const CAFFEINE_ABSORB_H = 0.75
-/** Below this the body counts as clear — less than a square of dark chocolate. */
-export const CAFFEINE_CLEAR_MG = 5
+/**
+ * Below this the body counts as clear. First-order decay never actually reaches
+ * zero, so this threshold — not the half-life — is what sets the "estimated 0"
+ * time. A 5 mg floor is the pharmacological one (~5 half-lives), which puts a
+ * single mug of coffee 26 h from clear and reads as nonsense in a journal.
+ * 25 mg is the dose below which caffeine has no measurable effect on alertness
+ * or sleep — a cup of green tea, a bar of dark chocolate — and puts a morning
+ * coffee clear by early evening.
+ */
+export const CAFFEINE_CLEAR_MG = 25
 
 /* ── alcohol ──────────────────────────────────────────────
    Widmark: linear absorption, then zero-order (constant rate)
