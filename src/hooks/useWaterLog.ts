@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { loadState, saveState } from '../storage'
-import { hydrationOf, type DayLog, type DrinkKind, type Entry, type State } from '../types'
+import {
+  hydrationOf,
+  type Body,
+  type DayLog,
+  type DrinkKind,
+  type Entry,
+  type State,
+} from '../types'
 
 function localDateKey(ts: number): string {
   const d = new Date(ts)
@@ -39,6 +46,13 @@ export function useWaterLog() {
   const setGoal = useCallback((dailyGoalMl: number) => {
     if (!Number.isFinite(dailyGoalMl) || dailyGoalMl <= 0) return
     setState((s) => ({ ...s, settings: { ...s.settings, dailyGoalMl: Math.round(dailyGoalMl) } }))
+  }, [])
+
+  const setBody = useCallback((patch: Partial<Body>) => {
+    setState((s) => ({
+      ...s,
+      settings: { ...s.settings, body: { ...s.settings.body, ...patch } },
+    }))
   }, [])
 
   const today = localDateKey(Date.now())
@@ -82,6 +96,8 @@ export function useWaterLog() {
 
   return {
     goalMl: state.settings.dailyGoalMl,
+    body: state.settings.body,
+    entries: state.entries,
     todayTotal,
     todayHydrationMl,
     todayEntries,
@@ -89,5 +105,6 @@ export function useWaterLog() {
     addEntry,
     undoEntry,
     setGoal,
+    setBody,
   }
 }
