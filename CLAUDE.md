@@ -27,7 +27,8 @@ There is **no test framework and no linter/formatter** configured. The only corr
 
 State flows through a single source of truth: the **`useWaterLog()`** hook (`src/hooks/useWaterLog.ts`). It loads from / persists to `localStorage` and exposes mutations (`addEntry`, `undoEntry`, `setGoal`) plus derived values (`todayTotal`, `todayHydrationMl`, `todayEntries`, `historyByDay`). `App.tsx` calls the hook once and passes slices down to presentational components in `src/components/`. Components don't own persisted state.
 
-- **Persistence:** localStorage key `health:v1`, shape `{ entries: Entry[], settings: { dailyGoalMl } }` (see `DEFAULT_STATE` in `src/types.ts`). `src/storage.ts` handles load/save and swallows parse/quota errors, falling back to defaults.
+- **Persistence:** localStorage key `health:v1`, shape `{ entries: Entry[], settings: { dailyGoalMl, body } }` (see `DEFAULT_STATE` in `src/types.ts`). `body` is `{ heightCm, weightKg, sex }`, where the two measures are `null` until the user fills them in. `src/storage.ts` handles load/save and swallows parse/quota errors, falling back to defaults — it coerces each field, so payloads written by older versions still load.
+- **Metabolism:** `src/metabolism.ts` is pure functions over `Entry[]` — no React, no state. Caffeine decays first-order (5 h half-life), alcohol follows Widmark (linear absorption, then a constant 0.15 g/L per hour), so caffeine's zero crossing is closed-form while blood alcohol has to be simulated minute by minute. `useNow()` (`src/hooks/useNow.ts`) re-renders every 30 s to keep both live; `LoadPanel` clamps that clock to the newest entry so a drink logged between ticks isn't read as being in the future.
 - **Styling:** one hand-written `src/styles.css` (no CSS framework). Theming and per-drink accent colors use CSS variables (e.g. `--water`, `--beer-strong`); dark mode keys off the system preference. Visualizations are inline SVG (`GlassProgress`, `HydrationMeter`).
 
 ## Domain model (the core concept)
@@ -38,4 +39,6 @@ Hydration is **not** the same as volume. Every drink has a `factor` in `DRINKS` 
 water 1.0 · tea 0.9 · coffee 0.7 · na beer 0.95 (≤0.5%) · light beer 0.6 (≤5%) · beer 0.5 (5–7%) · strong beer 0.3 (>7%)
 ```
 
-When adding a drink type, update `DrinkKind`, the `DRINKS` record (label, factor, `accentVar`), and `DRINK_ORDER` in `src/types.ts`, and add the matching CSS accent variable in `styles.css`. Preset volumes live in `QUICK_SIZES_ML`.
+Each drink also carries `caffeineMgPerMl` and `abv` (percent alcohol by volume). Those feed the "what's still in you" panel: caffeine on board in mg, blood alcohol in g/L, and the projected time each reaches zero. Blood alcohol additionally needs height and weight (Widmark's *r*, via the Seidl coefficients) — without them the alcohol card asks for them instead of guessing.
+
+When adding a drink type, update `DrinkKind`, the `DRINKS` record (label, factor, `accentVar`, `caffeineMgPerMl`, `abv`), and `DRINK_ORDER` in `src/types.ts`, and add the matching CSS accent variable in `styles.css`. Preset volumes live in `QUICK_SIZES_ML`.

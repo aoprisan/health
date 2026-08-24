@@ -1,8 +1,12 @@
+import { useState } from 'react'
+import { useNow } from './hooks/useNow'
 import { useWaterLog } from './hooks/useWaterLog'
+import { BodyMenu } from './components/BodyMenu'
 import { GlassProgress } from './components/GlassProgress'
 import { GoalEditor } from './components/GoalEditor'
 import { HistoryList } from './components/HistoryList'
 import { HydrationMeter } from './components/HydrationMeter'
+import { LoadPanel } from './components/LoadPanel'
 import { QuickPickGrid } from './components/QuickPickGrid'
 import { TodayList } from './components/TodayList'
 
@@ -20,6 +24,8 @@ function formatToday(): string {
 export default function App() {
   const {
     goalMl,
+    body,
+    entries,
     todayTotal,
     todayHydrationMl,
     todayEntries,
@@ -27,7 +33,11 @@ export default function App() {
     addEntry,
     undoEntry,
     setGoal,
+    setBody,
   } = useWaterLog()
+
+  const now = useNow()
+  const [bodyMenuOpen, setBodyMenuOpen] = useState(false)
 
   const volumePct = goalMl > 0 ? Math.round((todayTotal / goalMl) * 100) : 0
   const hydrationPct = goalMl > 0 ? Math.round((todayHydrationMl / goalMl) * 100) : 0
@@ -42,7 +52,15 @@ export default function App() {
           </h1>
           <p className="masthead-sub">a hydration journal · vol. ii</p>
         </div>
-        <div className="masthead-date">{formatToday()}</div>
+        <div className="masthead-aside">
+          <div className="masthead-date">{formatToday()}</div>
+          <BodyMenu
+            body={body}
+            open={bodyMenuOpen}
+            onOpenChange={setBodyMenuOpen}
+            onSave={setBody}
+          />
+        </div>
       </header>
 
       <section className="hero">
@@ -91,6 +109,16 @@ export default function App() {
           </div>
           <GoalEditor goalMl={goalMl} onSave={setGoal} />
         </div>
+      </section>
+
+      <section className="section">
+        <h2 className="section-title">what's still in you</h2>
+        <LoadPanel
+          entries={entries}
+          body={body}
+          now={now}
+          onEditBody={() => setBodyMenuOpen(true)}
+        />
       </section>
 
       <section className="section">
