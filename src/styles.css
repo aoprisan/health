@@ -998,13 +998,97 @@ input { font-family: inherit; }
 
 /* ─── LOAD PANEL (caffeine / alcohol) ──────────────────── */
 .load-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Collapsed by default: a one-line readout that opens into the two cards. */
+.load-toggle {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 18px;
+  width: 100%;
+  padding: 12px 2px;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  text-align: left;
+  cursor: pointer;
+}
+
+.load-brief {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 28px;
+  min-width: 0;
+}
+
+.load-chip {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.load-chip-key {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+  color: var(--ink-mute);
+}
+
+.load-chip-value {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--ink);
+  letter-spacing: -0.005em;
+}
+
+.load-chip-value.is-clear { color: var(--ink-mute); }
+
+.load-toggle-hint {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex: none;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.26em;
+  color: var(--ink-mute);
+  transition: color 160ms ease;
+}
+
+.load-toggle:hover .load-toggle-hint { color: var(--water-deep); }
+
+.load-caret {
+  font-size: 13px;
+  letter-spacing: 0;
+  line-height: 1;
+  color: var(--ochre);
+}
+
+.load-detail {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(18px, 3vw, 36px);
+}
+
+.load-detail[hidden] { display: none; }
+
+.load-cards {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: clamp(18px, 3vw, 36px);
 }
 
 .load-caveat {
-  grid-column: 1 / -1;
   margin: 2px 0 0;
   font-family: var(--serif);
   font-style: italic;
@@ -1129,8 +1213,9 @@ input { font-family: inherit; }
 }
 
 @media (max-width: 720px) {
-  .load-panel { grid-template-columns: 1fr; }
+  .load-cards { grid-template-columns: 1fr; }
   .load-card { padding: 18px 16px 14px; }
+  .load-brief { gap: 4px 18px; }
 }
 
 /* ─── FOOTER ───────────────────────────────────────────── */
