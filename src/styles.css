@@ -1722,3 +1722,40 @@ input { font-family: inherit; }
     transition-duration: 0.01ms !important;
   }
 }
+
+/* waist: how-to-measure figure */
+.navel-guide { margin: 0 0 14px; }
+.navel-guide summary {
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--ink-mute);
+}
+.navel-guide-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  margin-top: 10px;
+}
+.navel-figure { width: 150px; max-width: 45%; height: auto; flex: none; }
+.navel-body { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; }
+.navel-hint { fill: none; stroke: var(--ink-mute); stroke-width: 1; stroke-linecap: round; opacity: 0.7; }
+.navel-tape { fill: none; stroke: var(--ochre); stroke-width: 7; stroke-linecap: butt; opacity: 0.85; }
+.navel-tape-back { fill: none; stroke: var(--ochre); stroke-width: 2; stroke-dasharray: 3 3; opacity: 0.7; }
+.navel-tape-tick { stroke: var(--paper); stroke-width: 1; }
+.navel-dot { fill: var(--ink); }
+.navel-level { stroke: var(--rule-strong); stroke-width: 1; stroke-dasharray: 2 3; }
+.navel-label { font-family: var(--mono); font-size: 9px; fill: var(--ink-mute); letter-spacing: 0.08em; }
+.navel-steps {
+  flex: 1 1 180px;
+  margin: 0;
+  padding-left: 18px;
+  font-family: var(--serif);
+  font-size: 14.5px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+.navel-steps li + li { margin-top: 4px; }
