@@ -45,6 +45,8 @@ export type CutState = {
   days: Record<string, { entries: FoodEntry[] }>
   weights: Record<string, number>
   waist: Record<string, number>
+  /** The "set the table" presets — editable, and what Claude's menu suggestions write to. */
+  meals: Meal[]
 }
 
 export type Meal = { name: string; items: [foodId: string, grams: number][] }
@@ -66,13 +68,16 @@ export const DEFAULT_FOODS: Food[] = [
   { id: 'bread', name: 'Bread', kcal: 250, p: 9, c: 46, f: 3 },
 ]
 
-export const MEALS: Meal[] = [
+export const DEFAULT_MEALS: Meal[] = [
   { name: 'Skyr bowl', items: [['skyr', 400], ['oats', 30], ['berries', 150]] },
   { name: 'Beef + rice', items: [['beef', 250], ['rice', 250], ['veg', 200]] },
   { name: 'Schnitzel dinner', items: [['schnitz', 150], ['potato', 200], ['veg', 200], ['oil', 10]] },
   { name: 'Evening skyr', items: [['skyr', 300], ['cocoa', 10]] },
   { name: 'Beef swap', items: [['beef', 250], ['potato', 200], ['veg', 200], ['oil', 10]] },
 ]
+
+export const cloneMeals = (ms: Meal[]): Meal[] =>
+  ms.map((m) => ({ name: m.name, items: m.items.map(([id, g]) => [id, g] as [string, number]) }))
 
 /* ─── dates (local, "YYYY-MM-DD") ─────────────────────────── */
 
@@ -113,6 +118,7 @@ export function defaultCutState(now = Date.now()): CutState {
     days: {},
     weights: {},
     waist: {},
+    meals: cloneMeals(DEFAULT_MEALS),
   }
 }
 

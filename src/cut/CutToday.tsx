@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import type { CutLog } from '../hooks/useCutLog'
 import { CutClaude } from './CutClaude'
+import { CutMenuClaude } from './CutMenuClaude'
 import {
-  MEALS,
   addDays,
   dayTotals,
   entryMacros,
@@ -124,7 +124,7 @@ export function CutToday({ cut, now }: Props) {
           <span className="glyph">~</span> set the table <span className="glyph">~</span>
         </h2>
         <div className="cut-meals">
-          {MEALS.map((m) => {
+          {state.meals.map((m) => {
             const mm = mealMacros(state.foods, m)
             return (
               <button key={m.name} type="button" className="cut-meal" onClick={() => addMeal(day, m)}>
@@ -172,6 +172,7 @@ export function CutToday({ cut, now }: Props) {
         </form>
 
         <CutClaude cut={cut} day={day} />
+        <CutMenuClaude cut={cut} day={day} />
       </section>
 
       <section className="section">

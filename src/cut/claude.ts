@@ -6,7 +6,7 @@
  * prompt asks for a fenced JSON block; `parseClaudeReply` digs it out of whatever prose
  * surrounds it and is lenient about key names, units in strings and trailing commas.
  */
-import type { Food } from './model'
+import { mealMacros, r1, type CutSettings, type Food, type Macros, type Meal } from './model'
 
 /** One food from Claude's estimate, normalised to per-100 g so grams stay editable. */
 export type EstimateItem = {
@@ -73,8 +73,6 @@ const nonNeg = (v: unknown): number => {
   return Number.isFinite(n) && n >= 0 ? n : 0
 }
 
-const r1 = (x: number) => Math.round(x * 10) / 10
-
 function itemFrom(raw: unknown): EstimateItem | null {
   if (!raw || typeof raw !== 'object') return null
   const o = raw as Record<string, unknown>
@@ -93,6 +91,30 @@ function itemFrom(raw: unknown): EstimateItem | null {
     p: r1(nonNeg(pick(o, ['protein', 'p', 'protein_g', 'prot'])) * per),
     c: r1(nonNeg(pick(o, ['carbs', 'c', 'carbs_g', 'carbohydrates', 'carbohydrate', 'carb'])) * per),
     f: r1(nonNeg(pick(o, ['fat', 'f', 'fat_g', 'fats', 'total_fat'])) * per),
+  }
+}
+
+const ITEM_KEYS = ['items', 'foods', 'ingredients', 'components']
+
+/** The food lines in a parsed value: an array of foods, `{items: [...]}`, or one food alone. */
+function itemsOf(data: unknown): EstimateItem[] {
+  const list = Array.isArray(data)
+    ? data
+    : data && typeof data === 'object'
+      ? pick(data as Record<string, unknown>, ITEM_KEYS)
+      : undefined
+  const arr = Array.isArray(list) ? list : data && typeof data === 'object' ? [data] : []
+  return arr.map(itemFrom).filter((x): x is EstimateItem => x !== null)
+}
+
+/** Each JSON value found in the text, in the order `candidates` ranks them. */
+function* parsedCandidates(text: string): Generator<unknown> {
+  for (const c of candidates(text)) {
+    try {
+      yield lenientParse(c)
+    } catch {
+      // not JSON — try the next candidate
+    }
   }
 }
 
@@ -121,21 +143,8 @@ function lenientParse(s: string): unknown {
 /** The items in a pasted Claude reply; throws a readable error when there are none. */
 export function parseClaudeReply(text: string): EstimateItem[] {
   if (!text.trim()) throw new Error('paste claude’s reply first')
-  for (const c of candidates(text)) {
-    let data: unknown
-    try {
-      data = lenientParse(c)
-    } catch {
-      continue
-    }
-    const list = Array.isArray(data)
-      ? data
-      : data && typeof data === 'object'
-        ? pick(data as Record<string, unknown>, ['items', 'foods', 'ingredients', 'components'])
-        : undefined
-    // A single food object on its own is a one-item meal.
-    const arr = Array.isArray(list) ? list : data && typeof data === 'object' ? [data] : []
-    const items = arr.map(itemFrom).filter((x): x is EstimateItem => x !== null)
+  for (const data of parsedCandidates(text)) {
+    const items = itemsOf(data)
     if (items.length) return items
   }
   throw new Error('no meal found — the reply needs the json block with name, g and kcal')
@@ -146,6 +155,137 @@ export function pantryMatch(foods: Food[], name: string): Food | undefined {
   const key = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim()
   const k = key(name)
   return foods.find((f) => key(f.name) === k)
+}
+
+/* ─── menu planning ──────────────────────────────────────────── */
+
+/** A meal Claude proposes for the menu, its foods still named rather than resolved to ids. */
+export type MenuMeal = { name: string; items: EstimateItem[] }
+
+export type MenuScope = 'day' | 'rest'
+
+export type MenuContext = {
+  settings: CutSettings
+  foods: Food[]
+  meals: Meal[]
+  /** What is already logged today — used when planning the rest of the day. */
+  eaten: Macros
+}
+
+const per100 = (f: Food) =>
+  `${r1(f.kcal)} / ${r1(f.p)} / ${f.c === undefined ? '?' : r1(f.c)} / ${f.f === undefined ? '?' : r1(f.f)}`
+
+export function buildMenuPrompt(ctx: MenuContext, scope: MenuScope, changes: string): string {
+  const { settings: s, foods, meals, eaten } = ctx
+  const lines: string[] = []
+  if (scope === 'day') {
+    lines.push(
+      'Help me plan the menu for my cut — the set of meals I pick from each day.',
+      `Daily targets: ${s.kcal} kcal and at least ${s.protein} g protein, eaten between ${s.winStart} and ${s.winEnd}.`,
+      'Suggest a full day of meals that together land within about 3% of the calorie target and reach the protein target.',
+    )
+  } else {
+    const kcalLeft = Math.max(0, Math.round(s.kcal - eaten.kcal))
+    const pLeft = Math.max(0, Math.round(s.protein - eaten.p))
+    lines.push(
+      'Suggest what to eat for the rest of today on my cut.',
+      `Daily targets: ${s.kcal} kcal and at least ${s.protein} g protein; my eating window closes at ${s.winEnd}.`,
+      `Eaten so far: ${Math.round(eaten.kcal)} kcal and ${Math.round(eaten.p)} g protein — that leaves ${kcalLeft} kcal and ${pLeft} g protein.`,
+      'Suggest one to three meals that use up the remaining calories (within about 3%) and close the protein gap.',
+    )
+  }
+
+  if (meals.length) {
+    lines.push('', 'My current menu:')
+    for (const m of meals) {
+      const parts = m.items.map(([id, g]) => `${foods.find((f) => f.id === id)?.name ?? id} ${g} g`)
+      const t = mealMacros(foods, m)
+      lines.push(`- ${m.name}: ${parts.join(', ')} (${Math.round(t.kcal)} kcal, ${Math.round(t.p)} g protein)`)
+    }
+  }
+  if (foods.length) {
+    lines.push('', 'My pantry, per 100 g (kcal / protein / carbs / fat):')
+    for (const f of foods) lines.push(`- ${f.name}: ${per100(f)}`)
+  }
+
+  const want = changes.trim()
+  lines.push('', want ? `Changes I want: ${want}` : 'Improve on my current menu where it helps; keep what already works.')
+  lines.push(
+    'Build meals mostly from pantry foods and use their names exactly; other foods are fine when they help.',
+    'Give a weight in grams as eaten for every food, and that portion’s totals (not per 100 g).',
+    scope === 'day'
+      ? 'Return every meal of the menu, including the ones you keep unchanged.'
+      : 'Return only the new meals for today.',
+    '',
+    'Explain your choices in a few short lines, then end with only this JSON in a ```json block:',
+    '{"meals":[{"name":"Skyr bowl","items":[{"name":"Skyr (plain)","g":400,"kcal":252,"protein":44,"carbs":16,"fat":1}]}]}',
+  )
+  return lines.join('\n')
+}
+
+/** The meals in a pasted menu reply; throws a readable error when there are none. */
+export function parseMenuReply(text: string): MenuMeal[] {
+  if (!text.trim()) throw new Error('paste claude’s reply first')
+  for (const data of parsedCandidates(text)) {
+    const list = Array.isArray(data)
+      ? data
+      : data && typeof data === 'object'
+        ? pick(data as Record<string, unknown>, ['meals', 'menu', 'plan'])
+        : undefined
+    if (!Array.isArray(list)) continue
+    const meals = list.flatMap((m, i): MenuMeal[] => {
+      if (!m || typeof m !== 'object') return []
+      const name = pick(m as Record<string, unknown>, ['name', 'meal', 'title'])
+      const items = itemsOf(pick(m as Record<string, unknown>, ITEM_KEYS) ?? [])
+      if (!items.length) return []
+      return [{ name: typeof name === 'string' && name.trim() ? name.trim() : `meal ${i + 1}`, items }]
+    })
+    if (meals.length) return meals
+  }
+  throw new Error('no menu found — the reply needs the json block with "meals", each with its items')
+}
+
+/** Whether a pasted or shared reply is a menu (has "meals") or a single meal's estimate. */
+export function replyKind(text: string): 'menu' | 'meal' {
+  try {
+    parseMenuReply(text)
+    return 'menu'
+  } catch {
+    return 'meal'
+  }
+}
+
+/**
+ * Turn named food lines into pantry ids: a name already in the pantry uses that food (your own
+ * values win), anything else becomes a new food at Claude's per-100 g values.
+ */
+export function resolveItems(
+  foods: Food[],
+  items: EstimateItem[],
+  stamp = Date.now().toString(36),
+): { foods: Food[]; pairs: [foodId: string, grams: number][] } {
+  const next = [...foods]
+  const pairs: [string, number][] = []
+  items.forEach((it, i) => {
+    if (!(it.g > 0)) return
+    let food = pantryMatch(next, it.name)
+    if (!food) {
+      food = { id: `c${stamp}${i}`, name: it.name, kcal: it.kcal, p: it.p, c: it.c, f: it.f }
+      next.push(food)
+    }
+    pairs.push([food.id, it.g])
+  })
+  return { foods: next, pairs }
+}
+
+/** Macros a line will actually log: the pantry food's when the name matches, else Claude's. */
+export function lineMacros(foods: Food[], it: EstimateItem): Macros & { inPantry: boolean } {
+  const food = pantryMatch(foods, it.name)
+  const k = it.g / 100
+  if (food) {
+    return { kcal: food.kcal * k, p: food.p * k, c: (food.c ?? 0) * k, f: (food.f ?? 0) * k, inPantry: true }
+  }
+  return { kcal: it.kcal * k, p: it.p * k, c: it.c * k, f: it.f * k, inPantry: false }
 }
 
 /* ─── the way back: Claude's reply shared into the installed app ── */

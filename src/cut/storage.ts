@@ -1,4 +1,4 @@
-import { DEFAULT_FOODS, defaultCutState, type CutSettings, type CutState, type Food, type FoodEntry } from './model'
+import { DEFAULT_FOODS, DEFAULT_MEALS, cloneMeals, defaultCutState, type Meal, type CutSettings, type CutState, type Food, type FoodEntry } from './model'
 
 const KEY = 'health:cut:v1'
 /** The standalone cut tracker's key — read once if this app has no cut data yet. */
@@ -42,6 +42,21 @@ function coerceFoods(raw: unknown): Food[] {
   })
 }
 
+/** Missing (older saves, the standalone tracker's export) → the stock menu. */
+function coerceMeals(raw: unknown): Meal[] {
+  if (!Array.isArray(raw)) return cloneMeals(DEFAULT_MEALS)
+  return raw.flatMap((m): Meal[] => {
+    const r = (m ?? {}) as Record<string, unknown>
+    if (typeof r.name !== 'string' || !r.name.trim() || !Array.isArray(r.items)) return []
+    const items = r.items.flatMap((it): [string, number][] =>
+      Array.isArray(it) && typeof it[0] === 'string' && typeof it[1] === 'number' && it[1] > 0
+        ? [[it[0], it[1]]]
+        : [],
+    )
+    return items.length ? [{ name: r.name, items }] : []
+  })
+}
+
 function coerceDays(raw: unknown): CutState['days'] {
   const out: CutState['days'] = {}
   if (!raw || typeof raw !== 'object') return out
@@ -80,6 +95,7 @@ export function parseCutState(raw: unknown): CutState {
     days: coerceDays(r.days),
     weights: coerceSeries(r.weights),
     waist: coerceSeries(r.waist),
+    meals: coerceMeals(r.meals),
   }
 }
 

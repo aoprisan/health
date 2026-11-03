@@ -1822,6 +1822,30 @@ input { font-family: inherit; }
   color: var(--good);
 }
 
+/* ─── CUT · MENU ──────────────────────────────────────── */
+.cut-claude + .cut-claude { margin-top: 12px; }
+
+.cut-claude-chip.is-active { border-style: solid; border-color: var(--kcal); color: var(--kcal); }
+
+.cut-claude-target { margin: 0; }
+
+.cut-menu-row { grid-template-columns: minmax(0, 1fr) auto; row-gap: 4px; }
+.cut-menu-row .cut-row-name { grid-column: 1; grid-row: 1; }
+.cut-menu-row .cut-menu-items { grid-column: 1; grid-row: 2; }
+.cut-menu-row .cut-row-macros { grid-column: 1; grid-row: 3; white-space: normal; }
+.cut-menu-row .entry-undo { grid-column: 2; grid-row: 1 / 4; align-self: center; }
+
+.cut-menu-items {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 14.5px;
+  color: var(--ink-soft);
+}
+
+.cut-claude-total strong.is-off { color: var(--warn); }
+
+.cut-menu-actions { margin-top: 16px; }
+
 /* ─── FOOTER ───────────────────────────────────────────── */
 .app-footer {
   margin-top: clamp(56px, 8vw, 96px);

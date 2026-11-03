@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { CutLog } from '../hooks/useCutLog'
+import { foodById, mealMacros } from './model'
 
 type Props = { cut: CutLog }
 
@@ -13,7 +14,7 @@ const optional = (raw: string) => (raw.trim() ? num(raw) ?? undefined : undefine
 
 /** The pantry: per-100 g values, edited in place (saved when a field loses focus). */
 export function CutFoods({ cut }: Props) {
-  const { state, updateFood, addFoodType, removeFoodType } = cut
+  const { state, updateFood, addFoodType, removeFoodType, removeMeal, resetMeals } = cut
   const [name, setName] = useState('')
   const [kcal, setKcal] = useState('')
   const [p, setP] = useState('')
@@ -21,6 +22,53 @@ export function CutFoods({ cut }: Props) {
   const [fat, setFat] = useState('')
 
   return (
+    <>
+    <section className="section">
+      <h2 className="section-title">the menu</h2>
+      <p className="cut-note">the meals under “set the table”. plan new ones with claude on the today page.</p>
+      {state.meals.length === 0 ? (
+        <p className="empty-note">— no meals on the menu.</p>
+      ) : (
+        <ul className="entry-list">
+          {state.meals.map((m, i) => {
+            const t = mealMacros(state.foods, m)
+            return (
+              <li key={`${i}-${m.name}`} className="cut-row cut-menu-row">
+                <span className="cut-row-name">{m.name.toLowerCase()}</span>
+                <span className="cut-menu-items">
+                  {m.items
+                    .map(([id, g]) => `${foodById(state.foods, id)?.name ?? '(deleted food)'} ${g}\u00a0g`)
+                    .join(' · ')}
+                </span>
+                <span className="cut-row-macros">
+                  {`${Math.round(t.kcal)}\u00a0kcal · ${Math.round(t.p)}\u00a0g protein`}
+                </span>
+                <button
+                  type="button"
+                  className="entry-undo"
+                  aria-label={`Remove ${m.name} from the menu`}
+                  onClick={() => removeMeal(i)}
+                >
+                  remove
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+      <div className="cut-claude-row cut-menu-actions">
+        <button
+          type="button"
+          className="cut-secondary"
+          onClick={() => {
+            if (window.confirm('Put back the original five meals? Your current menu is replaced.')) resetMeals()
+          }}
+        >
+          reset menu
+        </button>
+      </div>
+    </section>
+
     <section className="section">
       <h2 className="section-title">the pantry · per 100 g</h2>
       <p className="cut-note">check the lidl schnitzel label and fix its values here.</p>
@@ -139,5 +187,6 @@ export function CutFoods({ cut }: Props) {
         <button type="submit" className="cut-primary">add</button>
       </form>
     </section>
+    </>
   )
 }
