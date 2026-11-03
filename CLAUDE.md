@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-A mobile-first, client-only hydration journal ("Hydrology"). Vite + React 18 + TypeScript. No backend, no login — all data lives in `localStorage`. Deployed to GitHub Pages at https://aoprisan.github.io/health/.
+A mobile-first, client-only health journal with two sections: **water** ("Hydrology", the default) and **cut** (calorie/protein log, eating window, weigh-ins, waist). A collapsed section menu in the masthead switches between them; `#cut` in the URL deep-links to the cut section and the back button returns to water. Vite + React 18 + TypeScript. No backend, no login — all data lives in `localStorage`. Deployed to GitHub Pages at https://aoprisan.github.io/health/.
 
 ## Commands
 
@@ -25,7 +25,11 @@ There is **no test framework and no linter/formatter** configured. The only corr
 
 ## Architecture
 
-State flows through a single source of truth: the **`useWaterLog()`** hook (`src/hooks/useWaterLog.ts`). It loads from / persists to `localStorage` and exposes mutations (`addEntry`, `undoEntry`, `setGoal`) plus derived values (`todayTotal`, `todayHydrationMl`, `todayEntries`, `historyByDay`). `App.tsx` calls the hook once and passes slices down to presentational components in `src/components/`. Components don't own persisted state.
+`App.tsx` is a thin shell: masthead (title, `BodyMenu`, `SectionMenu`), then `WaterView` or `cut/CutView`. Each section has one hook as its single source of truth, both called once in `App`.
+
+Water state flows through the **`useWaterLog()`** hook (`src/hooks/useWaterLog.ts`). It loads from / persists to `localStorage` and exposes mutations (`addEntry`, `undoEntry`, `setGoal`) plus derived values (`todayTotal`, `todayHydrationMl`, `todayEntries`, `historyByDay`). `App.tsx` calls the hook once and passes slices down to presentational components in `src/components/`. Components don't own persisted state.
+
+- **Cut:** `useCutLog()` (`src/hooks/useCutLog.ts`) over `src/cut/` — `model.ts` (types, default foods/meals, pure calcs: day totals, 7-day average, weekly rate), `storage.ts` (key `health:cut:v1`; falls back once to the standalone tracker's `cut-tracker.v1`; `parseCutState` also imports that tracker's JSON export), and the four tab components (today / weight / foods / settings). Cut has no height of its own: waist-to-height uses `body.heightCm`, and the newest weigh-in also writes `body.weightKg` (see `logWeight` in `App.tsx`).
 
 - **Persistence:** localStorage key `health:v1`, shape `{ entries: Entry[], settings: { dailyGoalMl, body } }` (see `DEFAULT_STATE` in `src/types.ts`). `body` is `{ heightCm, weightKg, sex }`, where the two measures are `null` until the user fills them in. `src/storage.ts` handles load/save and swallows parse/quota errors, falling back to defaults — it coerces each field, so payloads written by older versions still load.
 - **Metabolism:** `src/metabolism.ts` is pure functions over `Entry[]` — no React, no state. Caffeine decays first-order (5 h half-life), alcohol follows Widmark (linear absorption, then a constant 0.15 g/L per hour), so caffeine's zero crossing is closed-form while blood alcohol has to be simulated minute by minute. `useNow()` (`src/hooks/useNow.ts`) re-renders every 30 s to keep both live; `LoadPanel` clamps that clock to the newest entry so a drink logged between ticks isn't read as being in the future.
