@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { loadCutState, saveCutState } from '../cut/storage'
+import { pantryMatch, type EstimateItem } from '../cut/claude'
 import type { CutSettings, CutState, Food, FoodEntry, Meal } from '../cut/model'
 
 /** Single source of truth for the cut section, persisted to localStorage. */
@@ -43,6 +44,30 @@ export function useCutLog() {
     [],
   )
 
+  /**
+   * Log a Claude estimate. A line whose name matches a pantry food uses that food (your own
+   * label values win); every other line becomes a new pantry food at Claude's per-100 g values.
+   */
+  const addEstimate = useCallback((day: string, items: EstimateItem[]) => {
+    setState((s) => {
+      const foods = [...s.foods]
+      const stamp = Date.now().toString(36)
+      const added: FoodEntry[] = []
+      items.forEach((it, i) => {
+        if (!(it.g > 0)) return
+        let food = pantryMatch(foods, it.name)
+        if (!food) {
+          food = { id: `c${stamp}${i}`, name: it.name, kcal: it.kcal, p: it.p, c: it.c, f: it.f }
+          foods.push(food)
+        }
+        added.push({ foodId: food.id, g: it.g })
+      })
+      if (!added.length) return s
+      const prev = s.days[day]?.entries ?? []
+      return { ...s, foods, days: { ...s.days, [day]: { entries: [...prev, ...added] } } }
+    })
+  }, [])
+
   const setEntryGrams = useCallback(
     (day: string, index: number, g: number) => {
       if (!(g >= 0)) return
@@ -80,13 +105,13 @@ export function useCutLog() {
     setState((s) => ({ ...s, foods: s.foods.map((f) => (f.id === id ? { ...f, ...patch } : f)) }))
   }, [])
 
-  const addFoodType = useCallback((name: string, kcal: number, p: number) => {
+  const addFoodType = useCallback((name: string, kcal: number, p: number, c?: number, f?: number) => {
     const clean = name.trim()
     if (!clean) return
-    setState((s) => ({
-      ...s,
-      foods: [...s.foods, { id: `f${Date.now().toString(36)}`, name: clean, kcal: kcal || 0, p: p || 0 }],
-    }))
+    const food: Food = { id: `f${Date.now().toString(36)}`, name: clean, kcal: kcal || 0, p: p || 0 }
+    if (c !== undefined) food.c = c
+    if (f !== undefined) food.f = f
+    setState((s) => ({ ...s, foods: [...s.foods, food] }))
   }, [])
 
   const removeFoodType = useCallback((id: string) => {
@@ -103,6 +128,7 @@ export function useCutLog() {
     state,
     addFood,
     addMeal,
+    addEstimate,
     setEntryGrams,
     removeEntry,
     setWeight,

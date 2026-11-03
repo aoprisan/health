@@ -8,12 +8,17 @@ const num = (raw: string) => {
   return Number.isFinite(n) && n >= 0 ? n : null
 }
 
+/** Blank stays unknown rather than becoming 0. */
+const optional = (raw: string) => (raw.trim() ? num(raw) ?? undefined : undefined)
+
 /** The pantry: per-100 g values, edited in place (saved when a field loses focus). */
 export function CutFoods({ cut }: Props) {
   const { state, updateFood, addFoodType, removeFoodType } = cut
   const [name, setName] = useState('')
   const [kcal, setKcal] = useState('')
   const [p, setP] = useState('')
+  const [c, setC] = useState('')
+  const [fat, setFat] = useState('')
 
   return (
     <section className="section">
@@ -24,11 +29,13 @@ export function CutFoods({ cut }: Props) {
         <div className="cut-pantry-head" aria-hidden="true">
           <span>name</span>
           <span>kcal</span>
-          <span>protein</span>
+          <span>prot</span>
+          <span>carb</span>
+          <span>fat</span>
           <span />
         </div>
         {state.foods.map((f) => (
-          <div key={`${f.id}-${f.name}-${f.kcal}-${f.p}`} className="cut-pantry-row">
+          <div key={`${f.id}-${f.name}-${f.kcal}-${f.p}-${f.c}-${f.f}`} className="cut-pantry-row">
             <input
               className="cut-inline is-name"
               defaultValue={f.name}
@@ -66,6 +73,24 @@ export function CutFoods({ cut }: Props) {
                 else e.target.value = String(f.p)
               }}
             />
+            {(['c', 'f'] as const).map((k) => (
+              <input
+                key={k}
+                className="cut-inline"
+                type="number"
+                min={0}
+                step="0.1"
+                inputMode="decimal"
+                placeholder="—"
+                defaultValue={f[k] ?? ''}
+                aria-label={`${k === 'c' ? 'carb' : 'fat'} grams per 100 g of ${f.name}`}
+                onBlur={(e) => {
+                  const v = e.target.value.trim() === '' ? null : num(e.target.value)
+                  if (v !== null && v !== f[k]) updateFood(f.id, { [k]: v })
+                  else e.target.value = f[k] === undefined ? '' : String(f[k])
+                }}
+              />
+            ))}
             <button
               type="button"
               className="entry-undo"
@@ -83,10 +108,12 @@ export function CutFoods({ cut }: Props) {
         onSubmit={(e) => {
           e.preventDefault()
           if (!name.trim()) return
-          addFoodType(name, num(kcal) ?? 0, num(p) ?? 0)
+          addFoodType(name, num(kcal) ?? 0, num(p) ?? 0, optional(c), optional(fat))
           setName('')
           setKcal('')
           setP('')
+          setC('')
+          setFat('')
         }}
       >
         <label className="cut-field cut-field-grow">
@@ -100,6 +127,14 @@ export function CutFoods({ cut }: Props) {
         <label className="cut-field">
           <span className="cut-field-label">protein</span>
           <input type="number" min={0} step="0.1" inputMode="decimal" placeholder="—" value={p} onChange={(e) => setP(e.target.value)} />
+        </label>
+        <label className="cut-field">
+          <span className="cut-field-label">carbs</span>
+          <input type="number" min={0} step="0.1" inputMode="decimal" placeholder="—" value={c} onChange={(e) => setC(e.target.value)} />
+        </label>
+        <label className="cut-field">
+          <span className="cut-field-label">fat</span>
+          <input type="number" min={0} step="0.1" inputMode="decimal" placeholder="—" value={fat} onChange={(e) => setFat(e.target.value)} />
         </label>
         <button type="submit" className="cut-primary">add</button>
       </form>

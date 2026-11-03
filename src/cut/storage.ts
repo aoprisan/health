@@ -29,7 +29,16 @@ function coerceFoods(raw: unknown): Food[] {
     const r = f as Record<string, unknown>
     if (typeof r.id !== 'string' || typeof r.name !== 'string') return []
     const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : 0)
-    return [{ id: r.id, name: r.name, kcal: num(r.kcal), p: num(r.p) }]
+    const food: Food = { id: r.id, name: r.name, kcal: num(r.kcal), p: num(r.p) }
+    if (typeof r.c === 'number' && Number.isFinite(r.c) && r.c >= 0) food.c = r.c
+    if (typeof r.f === 'number' && Number.isFinite(r.f) && r.f >= 0) food.f = r.f
+    // Pantries saved before carbs/fat existed: fill those two in for the stock foods.
+    const stock = DEFAULT_FOODS.find((d) => d.id === food.id)
+    if (stock && food.c === undefined && food.f === undefined) {
+      food.c = stock.c
+      food.f = stock.f
+    }
+    return [food]
   })
 }
 

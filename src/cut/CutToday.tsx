@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { CutLog } from '../hooks/useCutLog'
+import { CutClaude } from './CutClaude'
 import {
   MEALS,
   addDays,
@@ -32,7 +33,7 @@ export function CutToday({ cut, now }: Props) {
   const [foodId, setFoodId] = useState(state.foods[0]?.id ?? '')
   const [grams, setGrams] = useState('')
 
-  const { kcal, p } = useMemo(() => dayTotals(state, day), [state, day])
+  const { kcal, p, c, f } = useMemo(() => dayTotals(state, day), [state, day])
   const entries = state.days[day]?.entries ?? []
   const selected = foodById(state.foods, foodId) ? foodId : state.foods[0]?.id ?? ''
 
@@ -108,6 +109,14 @@ export function CutToday({ cut, now }: Props) {
             </div>
           </div>
         </div>
+        <div className="cut-minor" aria-label="Carbs and fat">
+          <span>
+            carbs <strong>{Math.round(c)}</strong> g
+          </span>
+          <span>
+            fat <strong>{Math.round(f)}</strong> g
+          </span>
+        </div>
       </section>
 
       <section className="section">
@@ -161,6 +170,8 @@ export function CutToday({ cut, now }: Props) {
           </label>
           <button type="submit" className="cut-primary">add</button>
         </form>
+
+        <CutClaude cut={cut} day={day} />
       </section>
 
       <section className="section">
@@ -194,7 +205,8 @@ export function CutToday({ cut, now }: Props) {
                     <span className="unit">g</span>
                   </span>
                   <span className="cut-row-macros">
-                    {Math.round(m.kcal)} kcal · {r1(m.p)} g
+                    {Math.round(m.kcal)} kcal · {r1(m.p)} p
+                    {f?.c !== undefined || f?.f !== undefined ? ` · ${r1(m.c)}\u00a0c · ${r1(m.f)}\u00a0f` : ''}
                   </span>
                   <button
                     type="button"
