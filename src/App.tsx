@@ -1,14 +1,12 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { useCutLog } from './hooks/useCutLog'
 import { useNow } from './hooks/useNow'
 import { useWaterLog } from './hooks/useWaterLog'
 import { BodyMenu } from './components/BodyMenu'
-import { GlassProgress } from './components/GlassProgress'
-import { GoalEditor } from './components/GoalEditor'
-import { HistoryList } from './components/HistoryList'
-import { HydrationMeter } from './components/HydrationMeter'
-import { LoadPanel } from './components/LoadPanel'
-import { QuickPickGrid } from './components/QuickPickGrid'
-import { TodayList } from './components/TodayList'
+import { SectionMenu, type Section } from './components/SectionMenu'
+import { WaterView } from './components/WaterView'
+import { CutView } from './cut/CutView'
+import { r1, sortedWeights, weekLabel } from './cut/model'
 
 function formatToday(): string {
   return new Date()
@@ -21,41 +19,71 @@ function formatToday(): string {
     .toLowerCase()
 }
 
-export default function App() {
-  const {
-    goalMl,
-    body,
-    entries,
-    todayTotal,
-    todayHydrationMl,
-    todayEntries,
-    historyByDay,
-    addEntry,
-    undoEntry,
-    setGoal,
-    setBody,
-  } = useWaterLog()
+/** Water is the default; `#cut` deep-links (and survives a reload) into the cut section. */
+function sectionFromUrl(): Section {
+  return window.location.hash === '#cut' ? 'cut' : 'water'
+}
 
+export default function App() {
+  const water = useWaterLog()
+  const cut = useCutLog()
   const now = useNow()
   const [bodyMenuOpen, setBodyMenuOpen] = useState(false)
+  const [section, setSection] = useState<Section>(sectionFromUrl)
 
-  const volumePct = goalMl > 0 ? Math.round((todayTotal / goalMl) * 100) : 0
-  const hydrationPct = goalMl > 0 ? Math.round((todayHydrationMl / goalMl) * 100) : 0
-  const hydrationReached = todayHydrationMl >= goalMl && goalMl > 0
+  useEffect(() => {
+    const sync = () => setSection(sectionFromUrl())
+    window.addEventListener('popstate', sync)
+    window.addEventListener('hashchange', sync)
+    return () => {
+      window.removeEventListener('popstate', sync)
+      window.removeEventListener('hashchange', sync)
+    }
+  }, [])
+
+  const goTo = useCallback(
+    (next: Section) => {
+      if (next === section) return
+      const { pathname, search } = window.location
+      window.history.pushState(null, '', next === 'cut' ? '#cut' : pathname + search)
+      setSection(next)
+      window.scrollTo({ top: 0 })
+    },
+    [section],
+  )
+
+  const { setBody } = water
+  const { setWeight } = cut
+  const latestWeighIn = sortedWeights(cut.state).slice(-1)[0]?.[0] ?? null
+
+  // The newest weigh-in is also the body weight the blood-alcohol estimate uses.
+  const logWeight = useCallback(
+    (day: string, kg: number) => {
+      setWeight(day, kg)
+      if (latestWeighIn === null || day >= latestWeighIn) setBody({ weightKg: r1(kg) })
+    },
+    [setWeight, setBody, latestWeighIn],
+  )
+
+  const isCut = section === 'cut'
 
   return (
-    <div className="app">
+    <div className={`app is-${section}`}>
       <header className="app-header">
+        <SectionMenu section={section} onChange={goTo} />
         <div className="masthead">
           <h1 className="masthead-title">
-            Hydrology<span className="amp">.</span>
+            {isCut ? 'The Cut' : 'Hydrology'}
+            <span className="amp">.</span>
           </h1>
-          <p className="masthead-sub">a hydration journal · vol. ii</p>
+          <p className="masthead-sub">
+            {isCut ? `a cutting ledger · ${weekLabel(cut.state.settings, now)}` : 'a hydration journal · vol. ii'}
+          </p>
         </div>
         <div className="masthead-aside">
           <div className="masthead-date">{formatToday()}</div>
           <BodyMenu
-            body={body}
+            body={water.body}
             open={bodyMenuOpen}
             onOpenChange={setBodyMenuOpen}
             onSave={setBody}
@@ -63,84 +91,37 @@ export default function App() {
         </div>
       </header>
 
-      <section className="hero">
-        <div className="hero-meters">
-          <figure className="meter-figure">
-            <GlassProgress currentMl={todayTotal} goalMl={goalMl} />
-            <figcaption className="meter-caption">
-              <span className="meter-caption-label">volume</span>
-              <span className="meter-caption-value">
-                {todayTotal.toLocaleString()}
-                <span className="unit">ml</span>
-              </span>
-            </figcaption>
-          </figure>
-          <figure className="meter-figure">
-            <HydrationMeter hydrationMl={todayHydrationMl} goalMl={goalMl} />
-            <figcaption className="meter-caption">
-              <span className="meter-caption-label">effective</span>
-              <span className="meter-caption-value">
-                {todayHydrationMl.toLocaleString()}
-                <span className="unit">ml</span>
-              </span>
-            </figcaption>
-          </figure>
-        </div>
-
-        <div className="hero-readout">
-          <div className="hero-label">today's hydration</div>
-          <div className={`hero-num ${hydrationReached ? 'is-reached' : ''}`}>
-            {hydrationPct}
-            <span className="pct-mark">%</span>
-          </div>
-          <div className="hero-stat">
-            <span className="current">
-              {todayHydrationMl.toLocaleString()}<span className="unit">ml</span>
-            </span>
-            <span className="sep">/</span>
-            <span>of {goalMl.toLocaleString()} ml goal</span>
-            {hydrationReached ? <span className="reached-tag">— kept.</span> : null}
-          </div>
-          <div className="hero-substat">
-            <span className="hero-substat-label">raw volume</span>
-            <span className="hero-substat-value">
-              {todayTotal.toLocaleString()} ml · {volumePct}%
-            </span>
-          </div>
-          <GoalEditor goalMl={goalMl} onSave={setGoal} />
-        </div>
-      </section>
-
-      <section className="section">
-        <h2 className="section-title">what's still in you</h2>
-        <LoadPanel
-          entries={entries}
-          body={body}
+      {isCut ? (
+        <CutView
+          key="cut"
+          cut={cut}
+          body={water.body}
           now={now}
+          onLogWeight={logWeight}
+          onSetBody={setBody}
           onEditBody={() => setBodyMenuOpen(true)}
         />
-      </section>
-
-      <section className="section">
-        <h2 className="section-title">
-          <span className="glyph">~</span> pour a drink <span className="glyph">~</span>
-        </h2>
-        <QuickPickGrid onPick={addEntry} />
-      </section>
-
-      <section className="section">
-        <h2 className="section-title">today's log</h2>
-        <TodayList entries={todayEntries} onUndo={undoEntry} />
-      </section>
-
-      <section className="section">
-        <h2 className="section-title">the archive</h2>
-        <HistoryList days={historyByDay} goalMl={goalMl} />
-      </section>
+      ) : (
+        <WaterView
+          key="water"
+          goalMl={water.goalMl}
+          body={water.body}
+          entries={water.entries}
+          todayTotal={water.todayTotal}
+          todayHydrationMl={water.todayHydrationMl}
+          todayEntries={water.todayEntries}
+          historyByDay={water.historyByDay}
+          now={now}
+          addEntry={water.addEntry}
+          undoEntry={water.undoEntry}
+          setGoal={water.setGoal}
+          onEditBody={() => setBodyMenuOpen(true)}
+        />
+      )}
 
       <footer className="app-footer">
-        <span>folio · 02</span>
-        <span className="ornament">— bibite aquam —</span>
+        <span>folio · {isCut ? '03' : '02'}</span>
+        <span className="ornament">{isCut ? '— festina lente —' : '— bibite aquam —'}</span>
         <span>local · private</span>
       </footer>
     </div>
