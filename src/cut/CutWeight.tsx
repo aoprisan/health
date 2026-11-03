@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { CutLog } from '../hooks/useCutLog'
 import type { Body } from '../types'
 import { addDays, avg7, r1, todayIso } from './model'
+import { NavelGuide } from './NavelGuide'
 import { WeightChart } from './WeightChart'
 
 type Props = {
@@ -111,6 +112,7 @@ export function CutWeight({ cut, body, now, onLogWeight, onEditBody }: Props) {
 
       <section className="section">
         <h2 className="section-title">waist at the navel · fortnightly</h2>
+        <NavelGuide />
         <form
           className="cut-add"
           onSubmit={(e) => {
