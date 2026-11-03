@@ -7,6 +7,19 @@ export type Food = {
   kcal: number
   /** protein g per 100 g */
   p: number
+  /** carbs g per 100 g — optional: the original pantry tracked kcal and protein only */
+  c?: number
+  /** fat g per 100 g — optional, as above */
+  f?: number
+}
+
+/** Totals for a portion, a meal or a day. Carbs and fat count 0 for foods that lack them. */
+export type Macros = { kcal: number; p: number; c: number; f: number }
+
+export const ZERO_MACROS: Macros = { kcal: 0, p: 0, c: 0, f: 0 }
+
+export function sumMacros(a: Macros, b: Macros): Macros {
+  return { kcal: a.kcal + b.kcal, p: a.p + b.p, c: a.c + b.c, f: a.f + b.f }
 }
 
 export type FoodEntry = { foodId: string; g: number }
@@ -32,34 +45,39 @@ export type CutState = {
   days: Record<string, { entries: FoodEntry[] }>
   weights: Record<string, number>
   waist: Record<string, number>
+  /** The "set the table" presets — editable, and what Claude's menu suggestions write to. */
+  meals: Meal[]
 }
 
 export type Meal = { name: string; items: [foodId: string, grams: number][] }
 
 export const DEFAULT_FOODS: Food[] = [
-  { id: 'skyr', name: 'Skyr (plain)', kcal: 63, p: 11 },
-  { id: 'beef', name: 'Beef ≤5% fat (raw)', kcal: 125, p: 21 },
-  { id: 'schnitz', name: 'Lidl schnitzel (check label)', kcal: 240, p: 14 },
-  { id: 'oats', name: 'Oats', kcal: 372, p: 13.5 },
-  { id: 'berries', name: 'Berries', kcal: 50, p: 1 },
-  { id: 'banana', name: 'Banana', kcal: 89, p: 1.1 },
-  { id: 'rice', name: 'Rice (cooked)', kcal: 130, p: 2.7 },
-  { id: 'potato', name: 'Potatoes (boiled)', kcal: 80, p: 2 },
-  { id: 'veg', name: 'Vegetables / salad', kcal: 25, p: 1.5 },
-  { id: 'oil', name: 'Olive oil', kcal: 884, p: 0 },
-  { id: 'cocoa', name: 'Cocoa (unsweetened)', kcal: 300, p: 20 },
-  { id: 'honey', name: 'Honey', kcal: 304, p: 0.3 },
-  { id: 'egg', name: 'Egg (≈55 g each)', kcal: 143, p: 12.6 },
-  { id: 'bread', name: 'Bread', kcal: 250, p: 9 },
+  { id: 'skyr', name: 'Skyr (plain)', kcal: 63, p: 11, c: 4, f: 0.2 },
+  { id: 'beef', name: 'Beef ≤5% fat (raw)', kcal: 125, p: 21, c: 0, f: 5 },
+  { id: 'schnitz', name: 'Lidl schnitzel (check label)', kcal: 240, p: 14, c: 15, f: 14 },
+  { id: 'oats', name: 'Oats', kcal: 372, p: 13.5, c: 60, f: 7 },
+  { id: 'berries', name: 'Berries', kcal: 50, p: 1, c: 12, f: 0.3 },
+  { id: 'banana', name: 'Banana', kcal: 89, p: 1.1, c: 23, f: 0.3 },
+  { id: 'rice', name: 'Rice (cooked)', kcal: 130, p: 2.7, c: 28, f: 0.3 },
+  { id: 'potato', name: 'Potatoes (boiled)', kcal: 80, p: 2, c: 18, f: 0.1 },
+  { id: 'veg', name: 'Vegetables / salad', kcal: 25, p: 1.5, c: 4, f: 0.2 },
+  { id: 'oil', name: 'Olive oil', kcal: 884, p: 0, c: 0, f: 100 },
+  { id: 'cocoa', name: 'Cocoa (unsweetened)', kcal: 300, p: 20, c: 20, f: 13 },
+  { id: 'honey', name: 'Honey', kcal: 304, p: 0.3, c: 82, f: 0 },
+  { id: 'egg', name: 'Egg (≈55 g each)', kcal: 143, p: 12.6, c: 0.7, f: 9.5 },
+  { id: 'bread', name: 'Bread', kcal: 250, p: 9, c: 46, f: 3 },
 ]
 
-export const MEALS: Meal[] = [
+export const DEFAULT_MEALS: Meal[] = [
   { name: 'Skyr bowl', items: [['skyr', 400], ['oats', 30], ['berries', 150]] },
   { name: 'Beef + rice', items: [['beef', 250], ['rice', 250], ['veg', 200]] },
   { name: 'Schnitzel dinner', items: [['schnitz', 150], ['potato', 200], ['veg', 200], ['oil', 10]] },
   { name: 'Evening skyr', items: [['skyr', 300], ['cocoa', 10]] },
   { name: 'Beef swap', items: [['beef', 250], ['potato', 200], ['veg', 200], ['oil', 10]] },
 ]
+
+export const cloneMeals = (ms: Meal[]): Meal[] =>
+  ms.map((m) => ({ name: m.name, items: m.items.map(([id, g]) => [id, g] as [string, number]) }))
 
 /* ─── dates (local, "YYYY-MM-DD") ─────────────────────────── */
 
@@ -100,6 +118,7 @@ export function defaultCutState(now = Date.now()): CutState {
     days: {},
     weights: {},
     waist: {},
+    meals: cloneMeals(DEFAULT_MEALS),
   }
 }
 
@@ -109,32 +128,25 @@ export function foodById(foods: Food[], id: string): Food | undefined {
   return foods.find((f) => f.id === id)
 }
 
-export function entryMacros(foods: Food[], e: FoodEntry): { kcal: number; p: number } {
+export function entryMacros(foods: Food[], e: FoodEntry): Macros {
   const f = foodById(foods, e.foodId)
-  if (!f) return { kcal: 0, p: 0 }
-  return { kcal: (f.kcal * e.g) / 100, p: (f.p * e.g) / 100 }
+  if (!f) return ZERO_MACROS
+  const k = e.g / 100
+  return { kcal: f.kcal * k, p: f.p * k, c: (f.c ?? 0) * k, f: (f.f ?? 0) * k }
 }
 
-export function dayTotals(state: CutState, day: string): { kcal: number; p: number } {
-  let kcal = 0
-  let p = 0
-  for (const e of state.days[day]?.entries ?? []) {
-    const m = entryMacros(state.foods, e)
-    kcal += m.kcal
-    p += m.p
-  }
-  return { kcal, p }
+export function dayTotals(state: CutState, day: string): Macros {
+  return (state.days[day]?.entries ?? []).reduce(
+    (acc, e) => sumMacros(acc, entryMacros(state.foods, e)),
+    ZERO_MACROS,
+  )
 }
 
-export function mealMacros(foods: Food[], meal: Meal): { kcal: number; p: number } {
-  let kcal = 0
-  let p = 0
-  for (const [foodId, g] of meal.items) {
-    const m = entryMacros(foods, { foodId, g })
-    kcal += m.kcal
-    p += m.p
-  }
-  return { kcal, p }
+export function mealMacros(foods: Food[], meal: Meal): Macros {
+  return meal.items.reduce(
+    (acc, [foodId, g]) => sumMacros(acc, entryMacros(foods, { foodId, g })),
+    ZERO_MACROS,
+  )
 }
 
 export function sortedWeights(state: CutState): [string, number][] {

@@ -23,6 +23,13 @@ export default defineConfig({
         lang: 'en',
         dir: 'ltr',
         categories: ['health', 'lifestyle'],
+        // Lets the installed app receive Claude's reply from the share sheet (Android/Chromium);
+        // `takeSharedReply` in src/cut/claude.ts picks the text up from the query string.
+        share_target: {
+          action: '/health/',
+          method: 'GET',
+          params: { title: 'title', text: 'text', url: 'url' },
+        },
         background_color: '#f3ece0',
         theme_color: '#f3ece0',
         icons: [

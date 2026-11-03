@@ -1,4 +1,4 @@
-import { DEFAULT_FOODS, defaultCutState, type CutSettings, type CutState, type Food, type FoodEntry } from './model'
+import { DEFAULT_FOODS, DEFAULT_MEALS, cloneMeals, defaultCutState, type Meal, type CutSettings, type CutState, type Food, type FoodEntry } from './model'
 
 const KEY = 'health:cut:v1'
 /** The standalone cut tracker's key — read once if this app has no cut data yet. */
@@ -29,7 +29,31 @@ function coerceFoods(raw: unknown): Food[] {
     const r = f as Record<string, unknown>
     if (typeof r.id !== 'string' || typeof r.name !== 'string') return []
     const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : 0)
-    return [{ id: r.id, name: r.name, kcal: num(r.kcal), p: num(r.p) }]
+    const food: Food = { id: r.id, name: r.name, kcal: num(r.kcal), p: num(r.p) }
+    if (typeof r.c === 'number' && Number.isFinite(r.c) && r.c >= 0) food.c = r.c
+    if (typeof r.f === 'number' && Number.isFinite(r.f) && r.f >= 0) food.f = r.f
+    // Pantries saved before carbs/fat existed: fill those two in for the stock foods.
+    const stock = DEFAULT_FOODS.find((d) => d.id === food.id)
+    if (stock && food.c === undefined && food.f === undefined) {
+      food.c = stock.c
+      food.f = stock.f
+    }
+    return [food]
+  })
+}
+
+/** Missing (older saves, the standalone tracker's export) → the stock menu. */
+function coerceMeals(raw: unknown): Meal[] {
+  if (!Array.isArray(raw)) return cloneMeals(DEFAULT_MEALS)
+  return raw.flatMap((m): Meal[] => {
+    const r = (m ?? {}) as Record<string, unknown>
+    if (typeof r.name !== 'string' || !r.name.trim() || !Array.isArray(r.items)) return []
+    const items = r.items.flatMap((it): [string, number][] =>
+      Array.isArray(it) && typeof it[0] === 'string' && typeof it[1] === 'number' && it[1] > 0
+        ? [[it[0], it[1]]]
+        : [],
+    )
+    return items.length ? [{ name: r.name, items }] : []
   })
 }
 
@@ -71,6 +95,7 @@ export function parseCutState(raw: unknown): CutState {
     days: coerceDays(r.days),
     weights: coerceSeries(r.weights),
     waist: coerceSeries(r.waist),
+    meals: coerceMeals(r.meals),
   }
 }
 

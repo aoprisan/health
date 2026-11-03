@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { loadCutState, saveCutState } from '../cut/storage'
+import { resolveItems, type EstimateItem, type MenuMeal } from '../cut/claude'
+import { DEFAULT_MEALS, cloneMeals } from '../cut/model'
 import type { CutSettings, CutState, Food, FoodEntry, Meal } from '../cut/model'
 
 /** Single source of truth for the cut section, persisted to localStorage. */
@@ -43,6 +45,55 @@ export function useCutLog() {
     [],
   )
 
+  /** Log a Claude estimate: pantry names reuse your foods, the rest join the pantry. */
+  const addEstimate = useCallback((day: string, items: EstimateItem[]) => {
+    setState((s) => {
+      const { foods, pairs } = resolveItems(s.foods, items)
+      if (!pairs.length) return s
+      const prev = s.days[day]?.entries ?? []
+      const added = pairs.map(([foodId, g]) => ({ foodId, g }))
+      return { ...s, foods, days: { ...s.days, [day]: { entries: [...prev, ...added] } } }
+    })
+  }, [])
+
+  /**
+   * Take Claude's menu. `merge` swaps same-named meals in place and appends the rest;
+   * `replace` makes the suggestion the whole menu. New foods join the pantry either way.
+   */
+  const applyMenu = useCallback((menu: MenuMeal[], mode: 'merge' | 'replace') => {
+    setState((s) => {
+      let foods = s.foods
+      const incoming: Meal[] = []
+      menu.forEach((m, i) => {
+        const r = resolveItems(foods, m.items, `${Date.now().toString(36)}m${i}`)
+        foods = r.foods
+        if (r.pairs.length) incoming.push({ name: m.name, items: r.pairs })
+      })
+      if (!incoming.length) return s
+      const key = (n: string) => n.trim().toLowerCase()
+      let meals: Meal[]
+      if (mode === 'replace') meals = incoming
+      else {
+        meals = s.meals.map((m) => incoming.find((n) => key(n.name) === key(m.name)) ?? m)
+        for (const n of incoming) if (!meals.some((m) => key(m.name) === key(n.name))) meals.push(n)
+      }
+      return { ...s, foods, meals }
+    })
+  }, [])
+
+  /** Put Claude's suggested meals straight onto a day's plate (the menu is left as it is). */
+  const logMenu = useCallback((day: string, menu: MenuMeal[]) => {
+    addEstimate(day, menu.flatMap((m) => m.items))
+  }, [addEstimate])
+
+  const removeMeal = useCallback((index: number) => {
+    setState((s) => ({ ...s, meals: s.meals.filter((_, i) => i !== index) }))
+  }, [])
+
+  const resetMeals = useCallback(() => {
+    setState((s) => ({ ...s, meals: cloneMeals(DEFAULT_MEALS) }))
+  }, [])
+
   const setEntryGrams = useCallback(
     (day: string, index: number, g: number) => {
       if (!(g >= 0)) return
@@ -80,13 +131,13 @@ export function useCutLog() {
     setState((s) => ({ ...s, foods: s.foods.map((f) => (f.id === id ? { ...f, ...patch } : f)) }))
   }, [])
 
-  const addFoodType = useCallback((name: string, kcal: number, p: number) => {
+  const addFoodType = useCallback((name: string, kcal: number, p: number, c?: number, f?: number) => {
     const clean = name.trim()
     if (!clean) return
-    setState((s) => ({
-      ...s,
-      foods: [...s.foods, { id: `f${Date.now().toString(36)}`, name: clean, kcal: kcal || 0, p: p || 0 }],
-    }))
+    const food: Food = { id: `f${Date.now().toString(36)}`, name: clean, kcal: kcal || 0, p: p || 0 }
+    if (c !== undefined) food.c = c
+    if (f !== undefined) food.f = f
+    setState((s) => ({ ...s, foods: [...s.foods, food] }))
   }, [])
 
   const removeFoodType = useCallback((id: string) => {
@@ -103,6 +154,11 @@ export function useCutLog() {
     state,
     addFood,
     addMeal,
+    addEstimate,
+    applyMenu,
+    logMenu,
+    removeMeal,
+    resetMeals,
     setEntryGrams,
     removeEntry,
     setWeight,
